@@ -1,0 +1,72 @@
+version: 2.1
+jobs:
+  build-and-test:
+    macos:
+      xcode: 13.4.1
+    environment:
+      FL_OUTPUT_DIR: output
+    working_directory: ~/build-env
+    steps:
+      - attach_workspace:
+          at: ~/build-env
+      - add_ssh_keys:
+          fingerprints:
+            - "32:3b:94:a0:c1:a2:cd:2d:06:2f:98:48:9d:1f:7b:1f"
+      - run:
+          name: Setup WN in known hostss
+          command: >-
+            ssh-keyscan git.worldnettps.com >> ~/.ssh/known_hosts
+      - run:
+          name: Clone SDK
+          command: >-
+            GIT_SSH_COMMAND='ssh -v -i ~/.ssh/id_rsa_fingerprint'
+            git clone sdkbuild@git.worldnettps.com:/var/git/wn-sdk.git wn-sdk && cd "$_" && git checkout -t origin/1_6_21-BUILD_SCRIPT
+      - run:
+          name: Install lxml
+          command: pip3 install lxml
+      - run:
+          name: Install pbxproj
+          command: pip3 install pbxproj
+      - run:
+          name: Download doxygen
+          command: curl -LO https://www.doxygen.nl/files/doxygen-1.9.5.src.tar.gz
+      - run:
+          name: Un-tar doxygen
+          command: tar -xzvf doxygen-1.9.5.src.tar.gz
+      - run:
+          name: Remove doxygen download
+          command: rm -f doxygen-1.9.5.src.tar.gz
+      - run:
+          name: Update PATH with bison
+          command: echo -e '\nexport PATH="/usr/local/opt/bison/bin:$PATH"' >> ~/.bash_profile
+      - run:
+          name: Update LDFLAGS with bison
+          command: export LDFLAGS="-L/usr/local/opt/bison/lib"
+      - run:
+          name: Update bash_profile
+          command: source ~/.bash_profile
+      - run:
+          name: Show bison version
+          command: bison -V
+      - run:
+          name: Install Cmake
+          command: brew install cmake          
+      - run:
+          name: Build doxygen
+          command: cd doxygen-1.9.5 && mkdir build && cd build && cmake -G "Unix Makefiles" .. && make
+      - run:
+          name: Build SDK
+          no_output_timeout: 20m
+          command: cd wn-sdk && python build.py
+      - store_artifacts:
+          name: Store SDK Build Artifacts
+          path: ~/build-env/wn-sdk/build
+          destination: SDK-build
+      - run:
+          name: List Directories
+          command: ls
+
+workflows:
+  build-test-lint:
+    jobs:
+      - build-and-test
