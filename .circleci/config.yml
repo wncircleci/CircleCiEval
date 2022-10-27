@@ -11,7 +11,7 @@ jobs:
           at: ~/build-env
       - add_ssh_keys:
           fingerprints:
-            - "32:3b:94:a0:c1:a2:cd:2d:06:2f:98:48:9d:1f:7b:1f"
+            - "29:29:51:4f:62:1e:d3:d1:0c:43:6b:18:94:eb:1b:18"
       - run:
           name: Setup WN in known hostss
           command: >-
